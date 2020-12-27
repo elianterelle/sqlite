@@ -25,7 +25,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 @NativePlugin(
-    permissions = { Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE },
+    permissions = { },
     requestCodes = { CapacitorSQLite.REQUEST_SQLITE_PERMISSION }
 )
 public class CapacitorSQLite extends Plugin {
@@ -34,7 +34,7 @@ public class CapacitorSQLite extends Plugin {
 
     private SQLiteDatabaseHelper mDb;
     private GlobalSQLite globalData = new GlobalSQLite();
-    private boolean isPermissionGranted = false;
+    private boolean isPermissionGranted = true;
 
     private Context context;
     private UtilsSQLite uSqlite = new UtilsSQLite();
@@ -43,12 +43,6 @@ public class CapacitorSQLite extends Plugin {
 
     public void load() {
         Log.v(TAG, "*** in load " + isPermissionGranted + " ***");
-        if (hasRequiredPermissions()) {
-            isPermissionGranted = true;
-        } else {
-            isPermissionGranted = false;
-        }
-
         // Get singleton instance of database
         context = getContext();
     }
@@ -511,32 +505,10 @@ public class CapacitorSQLite extends Plugin {
 
     @PluginMethod
     public void requestPermissions(PluginCall call) {
-        pluginRequestPermissions(
-            new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE },
-            REQUEST_SQLITE_PERMISSION
-        );
     }
 
     @Override
     protected void handleRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.handleRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_SQLITE_PERMISSION) {
-            boolean permissionsGranted = true;
-            for (int grantResult : grantResults) {
-                if (grantResult != 0) {
-                    permissionsGranted = false;
-                }
-            }
-
-            JSObject data = new JSObject();
-            if (permissionsGranted) {
-                isPermissionGranted = true;
-                notifyPermissionsRequest(isPermissionGranted);
-            } else {
-                isPermissionGranted = false;
-                notifyPermissionsRequest(isPermissionGranted);
-            }
-        }
     }
 
     private void retResult(PluginCall call, Boolean res, String message) {
@@ -580,22 +552,5 @@ public class CapacitorSQLite extends Plugin {
     }
 
     protected void notifyPermissionsRequest(boolean isPermissionGranted) {
-        final JSObject data = new JSObject();
-        if (isPermissionGranted) {
-            data.put("permissionGranted", Integer.valueOf(1));
-        } else {
-            data.put("permissionGranted", Integer.valueOf(0));
-        }
-        bridge
-            .getActivity()
-            .runOnUiThread(
-                new Runnable() {
-
-                    @Override
-                    public void run() {
-                        notifyListeners("androidPermissionsRequest", data);
-                    }
-                }
-            );
     }
 }
